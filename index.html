@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>語彙クイズ（Vocabulary Mode）</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: linear-gradient(135deg, #4da0ff, #3874ff);
+  text-align: center;
+  padding: 40px;
+  color: white;
+}
+.box {
+  background: rgba(255,255,255,0.15);
+  padding: 20px;
+  border-radius: 14px;
+  margin: 20px auto;
+  width: 80%;
+  font-size: 22px;
+}
+.choice {
+  background: white;
+  color: #3874ff;
+  padding: 14px 22px;
+  margin: 6px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+.correct { background: #00cc66 !important; color: white !important; }
+.wrong   { background: #ff4444 !important; color: white !important; }
+
+#next {
+  margin-top: 30px;
+  padding: 14px 28px;
+  font-size: 20px;
+  background: white;
+  color: #0055ff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>語彙クイズ（Vocabulary Mode）</h1>
+
+<div class="box" id="question">問題がここに出ます</div>
+<div id="choices"></div>
+<div class="box" id="explain" style="opacity:0;"></div>
+
+<button id="next">次へ</button>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const qa = [ 
+    { q:"姉 → ?", a:"abla", c:["anne","arkadaş","abla değil"], ex:"Abla burada." },
+    { q:"〜かしら → ?", a:"acaba", c:["ama","ayrı","acık"], ex:"Acaba bu doğru mu?" },
+{"q":"姉 → ?","a":"abla","c":["anne","arkadaş","abla değil"],"ex":"Abla burada."},
+{"q":"〜かしら、〜かな → ?","a":"acaba","c":["ama","ayrıl","acık"],"ex":"Acaba bu doğru mu?"},
+{"q":"開いている、障害のない → ?","a":"açık","c":["kapalı","açmak","ayrı"],"ex":"Kapı açık."},
+{"q":"開ける → ?","a":"açmak","c":["açık","ağlamak","ayrılmak"],"ex":"Kapıyı açmak istiyorum."},
+{"q":"名前 → ?","a":"ad","c":["ada","adam","ana"],"ex":"Adım Deniz."},
+{"q":"島 → ?","a":"ada","c":["ad","araba","oda"],"ex":"Ada küçük."},
+{"q":"許す → ?","a":"affetmek","c":["affeder","izin vermek","unutmak"],"ex":"Beni affet."},
+{"q":"兄 → ?","a":"ağabey","c":["arkadaş","abla","anne"],"ex":"Ağabeyim Ankara’da."},
+{"q":"流れる → ?","a":"akmak","c":["almak","ağlamak","akşam"],"ex":"Su akıyor."},
+{"q":"夕方、晩 → ?","a":"akşam","c":["sabah","gece","öğle"],"ex":"Akşam yemeği hazır mı?"},
+{"q":"買い物 → ?","a":"alışveriş","c":["alışmak","almak","satış"],"ex":"Alışveriş yapıyorum."},
+{"q":"もらう、取る、買う、迎える → ?","a":"almak","c":["vermek","bulmak","gitmek"],"ex":"Bir kahve almak istiyorum."},
+{"q":"もしもし → ?","a":"alo","c":["merhaba","selam","hey"],"ex":"Alo? Deniz ben."},
+{"q":"6、6つの → ?","a":"altı","c":["altmış","on","sekiz"],"ex":"Altı kişi var."},
+{"q":"60、60の → ?","a":"altmış","c":["altı","yetmiş","kırk"],"ex":"Altmış lira."},
+{"q":"けれども、でも → ?","a":"ama","c":["ve","fakat","amaç"],"ex":"Gelmek istiyorum ama vaktim yok."},
+{"q":"アメリカ人 → ?","a":"Amerikan","c":["Amerika","Amerikalı","Amerika'da"],"ex":"Amerikan arabası."},
+{"q":"アメリカドル → ?","a":"Amerikan doları","c":["lira","euro","döviz"],"ex":"Bu Amerikan doları mı?"},
+{"q":"かぎ → ?","a":"anahtar","c":["çanta","kapı","kart"],"ex":"Bu kimin anahtarı?"},
+{"q":"わかる、理解する → ?","a":"anlamak","c":["bilmek","öğrenmek","duymak"],"ex":"Anlamıyorum."},
+{"q":"母 → ?","a":"anne","c":["abla","bayan","kadın"],"ex":"Annem evde."},
+{"q":"車 → ?","a":"araba","c":["otobüs","dolmuş","tren"],"ex":"Araba burada."},
+{"q":"探す、電話する → ?","a":"aramak","c":["bulmak","bakmak","sormak"],"ex":"Deniz’i arıyorum."},
+{"q":"後ろ → ?","a":"arka","c":["yan","alt","ön"],"ex":"Arka kapı kapalı."},
+{"q":"友だち → ?","a":"arkadaş","c":["aile","abla","çocuk"],"ex":"Arkadaşım Türkçe konuşuyor."},
+{"q":"料理人 → ?","a":"aşçı","c":["öğretmen","garson","satıcı"],"ex":"Aşçı çok iyi yemek yapıyor."},
+{"q":"ユーロ → ?","a":"avro","c":["dolar","lira","yen"],"ex":"Avro var mı?"},
+{"q":"月、〜か月 → ?","a":"ay","c":["yıl","hafta","gün"],"ex":"Bir ay kaldım."},
+{"q":"同じ → ?","a":"aynı","c":["ayrı","az","fazla"],"ex":"Aynı oda."},
+{"q":"別の → ?","a":"ayrı","c":["aynı","az","fazla"],"ex":"Ayrı masalar."},
+{"q":"別々に → ?","a":"ayrı ayrı","c":["birlikte","ayrı","tek"],"ex":"Ayrı ayrı ödeyelim."},
+{"q":"少ない → ?","a":"az","c":["çok","biraz","yavaş"],"ex":"Param az."},
+
+{"q":"父 → ?","a":"baba","c":["dede","amca","dayı"],"ex":"Babam evde."},
+{"q":"バクラヴァ → ?","a":"baklava","c":["lokum","kebap","pilav"],"ex":"Baklava çok güzel."},
+{"q":"見る → ?","a":"bakmak","c":["görmek","izlemek","aramak"],"ex":"Bakma!"},
+{"q":"魚 → ?","a":"balık","c":["et","tavuk","köpek"],"ex":"Balık taze."},
+{"q":"私に → ?","a":"bana","c":["benim","bende","beni"],"ex":"Bana söyle."},
+{"q":"銀行 → ?","a":"banka","c":["market","otel","bilet"],"ex":"Banka kapalı mı?"},
+{"q":"銀行員 → ?","a":"banka memuru","c":["öğretmen","şoför","garson"],"ex":"O banka memuru."},
+{"q":"浴室 → ?","a":"banyo","c":["oda","tuvalet","mutfak"],"ex":"Banyo nerede?"},
+{"q":"平和 → ?","a":"barış","c":["savaş","dostluk","özgür"],"ex":"Barış önemli."},
+{"q":"他の → ?","a":"başka","c":["aynı","ayrı","çok"],"ex":"Başka bir şey?"},
+{"q":"首都 → ?","a":"başkent","c":["şehir","ülke","kasaba"],"ex":"Ankara başkenttir."},
+{"q":"始まる → ?","a":"başlamak","c":["bitmek","başvurmak","başlamak değil"],"ex":"Ders başlıyor."},
+{"q":"毛布 → ?","a":"battaniye","c":["yorgan","çarşaf","pike"],"ex":"Battaniye sıcak."},
+{"q":"独身 → ?","a":"bekâr","c":["evli","genç","yalnız"],"ex":"O bekâr."},
+{"q":"待つ → ?","a":"beklemek","c":["aramak","gelmek","durmak"],"ex":"Bir dakika bekleyebilir misiniz?"},
+{"q":"私 → ?","a":"ben","c":["bana","beni","biz"],"ex":"Ben Deniz."},
+{"q":"私の → ?","a":"benim","c":["bana","beni","bizim"],"ex":"Bu benim çantam."},
+{"q":"一緒に → ?","a":"beraber","c":["yalnız","ayrı","çok"],"ex":"Beraber gidelim mi?"},
+{"q":"5、5つの → ?","a":"beş","c":["altı","dört","sekiz"],"ex":"Beş lira."},
+{"q":"〜さん（男性） → ?","a":"bey","c":["hanım","aga","usta"],"ex":"Deniz Bey."},
+{"q":"切符 → ?","a":"bilet","c":["kart","fiş","para"],"ex":"Bilet ne kadar?"},
+{"q":"パソコン → ?","a":"bilgisayar","c":["telefon","tablet","televizyon"],"ex":"Bilgisayarım yeni."},
+{"q":"知る → ?","a":"bilmek","c":["anlamak","öğrenmek","duymak"],"ex":"Bilmiyorum."},
+{"q":"1000 → ?","a":"bin","c":["yüz","milyon","yirmi"],"ex":"Bin lira."},
+{"q":"乗る → ?","a":"binmek","c":["inmek","sürmek","gitmek"],"ex":"Otobüse biniyorum."},
+{"q":"1つの → ?","a":"bir","c":["bu","o","şu"],"ex":"Bir kahve, lütfen."},
+{"q":"何か → ?","a":"bir şey","c":["hiçbir şey","biraz","şey"],"ex":"Bir şey sormak istiyorum."},
+{"q":"どこへでも → ?","a":"bir yere","c":["bir yerde","her yerde","hiçbir yerde"],"ex":"Bir yere gidiyorum."},
+{"q":"少し → ?","a":"biraz","c":["az","çok","hemen"],"ex":"Biraz Türkçe konuşuyorum."},
+{"q":"終わる → ?","a":"bitmek","c":["başlamak","durmak","bitirmek"],"ex":"Ders bitti."},
+{"q":"終わらせる → ?","a":"bitirmek","c":["bitmek","başlamak","yapmak"],"ex":"Ödevi bitirdim."},
+{"q":"私たち → ?","a":"biz","c":["siz","ben","onlar"],"ex":"Biz Türkçe öğreniyoruz."},
+{"q":"私たちの → ?","a":"bizim","c":["benim","sizin","onların"],"ex":"Bu bizim evimiz."},
+{"q":"借金 → ?","a":"borç","c":["bornoz","para","fatura"],"ex":"Borç aldım."},
+{"q":"壊す → ?","a":"bozmak","c":["kırmak","bitirmek","dökmek"],"ex":"Telefonu bozdum."},
+{"q":"壊れている → ?","a":"bozuk","c":["tamir","sağlam","yeni"],"ex":"Makine bozuk."},
+
+{"q":"これ、この → ?","a":"bu","c":["şu","o","burası"],"ex":"Bu doğru mu?"},
+{"q":"半分 → ?","a":"buçuk","c":["yarım","biraz","çok"],"ex":"Bir buçuk lira."},
+{"q":"今日 → ?","a":"bugün","c":["yarın","dün","şimdi"],"ex":"Bugün hava güzel."},
+{"q":"見つける → ?","a":"bulmak","c":["aramak","bakmak","sormak"],"ex":"Yeni bir iş buldum."},
+{"q":"会う → ?","a":"buluşmak","c":["gelmek","aramak","beklemek"],"ex":"Saat üçte buluşalım."},
+{"q":"ここ → ?","a":"bura","c":["burada","şura","ora"],"ex":"Bura küçük."},
+{"q":"どうぞ → ?","a":"Buyurun","c":["Lütfen","Affedersiniz","Merhaba"],"ex":"Buyurun."},
+{"q":"大きい → ?","a":"büyük","c":["küçük","geniş","uzun"],"ex":"Büyük oda."},
+
+{"q":"通り → ?","a":"cadde","c":["sokak","yol","şehir"],"ex":"Bu cadde çok uzun."},
+{"q":"ガラス → ?","a":"cam","c":["kapı","pencere","masa"],"ex":"Cam kırık."},
+{"q":"ポケット → ?","a":"cep","c":["çanta","kol","elbise"],"ex":"Cep dolu."},
+{"q":"携帯電話 → ?","a":"cep telefonu","c":["bilgisayar","telefon","tablet"],"ex":"Cep telefonum nerede?"},
+{"q":"速く → ?","a":"çabuk","c":["yavaş","çabuk değil","hemen"],"ex":"Çabuk gel!"},
+{"q":"働く → ?","a":"çalışmak","c":["okumak","yazmak","dinlenmek"],"ex":"Şirkette çalışıyorum."},
+{"q":"かばん → ?","a":"çanta","c":["cep","kitap","araba"],"ex":"Bu benim çantam."},
+{"q":"市場 → ?","a":"çarşı","c":["pazar","sokak","cadde"],"ex":"Çarşı kalabalık."},
+{"q":"お茶 → ?","a":"çay","c":["su","kahve","ayran"],"ex":"Çay içer misiniz?"},
+{"q":"引く → ?","a":"çekmek","c":["itmek","bakmak","almak"],"ex":"Fotoğraf çekmek yasak."},
+{"q":"撮ってもらう → ?","a":"çektirmek","c":["çekmek"," göstermek","yapmak"],"ex":"Fotoğraf çektirdim."},
+{"q":"出る → ?","a":"çıkmak","c":["girmek","gitmek","inmek"],"ex":"Dışarı çıkıyorum."},
+{"q":"子ども → ?","a":"çocuk","c":["genç","kız","erkek"],"ex":"Çocuk parkta."},
+{"q":"多い → ?","a":"çok","c":["az","biraz","fazla"],"ex":"Çok güzel."},
+{"q":"スープ → ?","a":"çorba","c":["salata","su","ekmek"],"ex":"Çorba sıcak."},
+
+{"q":"週 → ?","a":"hafta","c":["gün","ay","yıl"],"ex":"Bu hafta."},
+{"q":"週末 → ?","a":"hafta sonu","c":["hafta içi","tatil","pazar günü"],"ex":"Hafta sonu İstanbul’a gidiyorum."},
+{"q":"じゅうたん → ?","a":"halı","c":["kilim","pike","battaniye"],"ex":"Türk halısı güzel."},
+{"q":"ハマム → ?","a":"hamam","c":["banyo","sauna","otel"],"ex":"Hamam çok sıcak."},
+{"q":"どの → ?","a":"hangi","c":["ne","kim","kaç"],"ex":"Hangi oda?"},
+{"q":"〜さん（女性） → ?","a":"hanım","c":["bayan","abla","hanımefendi"],"ex":"Miki Hanım."},
+{"q":"地図 → ?","a":"harita","c":["şehir","sokak","ülke"],"ex":"Harita lazım."},
+{"q":"病気 → ?","a":"hasta","c":["sağlam","yorgun","kötü"],"ex":"Hastayım."},
+{"q":"病気になる → ?","a":"hastalanmak","c":["hasta olmak","üşümek","yorulmak"],"ex":"O hastalandı."},
+{"q":"病院 → ?","a":"hastane","c":["eczane","klinik","okul"],"ex":"Hastane nerede?"},
+{"q":"いいえ → ?","a":"hayır","c":["evet","tamam","belki"],"ex":"Hayır, istemiyorum."},
+{"q":"プレゼント → ?","a":"hediye","c":["eşya","para","bilet"],"ex":"Bu hediye sana."},
+{"q":"すぐ → ?","a":"hemen","c":["yavaş","biraz","çabuk"],"ex":"Hemen geliyorum."},
+{"q":"まだ（〜ない） → ?","a":"henüz","c":["daha","şimdi","yeni"],"ex":"Henüz hazır değil."},
+{"q":"毎〜、すべて → ?","a":"her","c":["bazı","hep","hiç"],"ex":"Her gün Türkçe çalışıyorum."},
+{"q":"会計 → ?","a":"hesap","c":["fiş","fatura","para"],"ex":"Hesap lütfen."},
+{"q":"まったく、全然 → ?","a":"hiç","c":["biraz","çok","az"],"ex":"Hiç Türkçe bilmiyorum."},
+
+{"q":"中へ、〜の中に → ?","a":"içeri","c":["dışarı","yan","alt"],"ex":"İçeri giriyorum."},
+{"q":"〜のために → ?","a":"için","c":["gibi","ile","kadar"],"ex":"Bu hediye senin için."},
+{"q":"酒 → ?","a":"içki","c":["şarap","bira","çay"],"ex":"İçki içmiyorum."},
+{"q":"飲む → ?","a":"içmek","c":["yemek","çekmek","bakmak"],"ex":"Çay içiyorum."},
+{"q":"2、2つ → ?","a":"iki","c":["bir","üç","dört"],"ex":"İki kahve, lütfen."},
+{"q":"真珠 → ?","a":"inci","c":["altın","gümüş","kolye"],"ex":"İnci kolye güzel."},
+{"q":"値引き → ?","a":"indirim","c":["pahalı","fiyat","fiş"],"ex":"İndirim var mı?"},
+{"q":"値下げする → ?","a":"indirmek","c":["kaldırmak","çıkarmak","inmek"],"ex":"Fiyatı indirir misiniz?"},
+{"q":"英語 → ?","a":"İngilizce","c":["Türkçe","Japonca","Fransızca"],"ex":"İngilizce biliyorum."},
+{"q":"英語教師 → ?","a":"İngilizce öğretmeni","c":["öğrenci","memur","mühendis"],"ex":"O İngilizce öğretmeni."},
+{"q":"望む、欲しい → ?","a":"istemek","c":["sevmek","almak","gitmek"],"ex":"Bir kahve istiyorum."},
+{"q":"仕事、用事 → ?","a":"iş","c":["ev","okul","ders"],"ex":"İşim var."},
+{"q":"日本人 → ?","a":"Japon","c":["Japonca","Japonya","Türk"],"ex":"Ben Japonum."},
+{"q":"日本語 → ?","a":"Japonca","c":["Türkçe","Japon","İngilizce"],"ex":"Japonca biliyor musunuz?"},
+{"q":"日本 → ?","a":"Japonya","c":["Türkiye","Çin","Kore"],"ex":"Japonya uzak."},
+
+{"q":"いくつ → ?","a":"kaç","c":["ne","hangi","kim"],"ex":"Kaç lira?"},
+{"q":"何時間 → ?","a":"kaç saat","c":["saat","ne zaman","kaç dakika"],"ex":"Kaç saat sürüyor?"},
+{"q":"何個 → ?","a":"kaç tane","c":["birkaç","çok","kaç"],"ex":"Kaç tane istiyorsunuz?"},
+{"q":"兄弟 → ?","a":"kardeş","c":["abi","abla","çocuk"],"ex":"Kardeşim okulda."},
+{"q":"カード → ?","a":"kart","c":["bilet","fiş","anahtar"],"ex":"Kredi kartı geçiyor mu?"},
+{"q":"失う → ?","a":"kaybetmek","c":["bulmak","unutmak","kaçırmak"],"ex":"Cüzdanımı kaybettim."},
+{"q":"40 → ?","a":"kırk","c":["otuz","elli","yirmi"],"ex":"Kırk lira."},
+{"q":"娘 → ?","a":"kız","c":["erkek","çocuk","hanım"],"ex":"Kızım burada."},
+{"q":"1kg → ?","a":"kilo","c":["gram","litre","paket"],"ex":"Bir kilo domates."},
+{"q":"誰 → ?","a":"kim","c":["ne","hangi","kimin"],"ex":"Kim bu?"},
+{"q":"人 → ?","a":"kişi","c":["insan","adam","biri"],"ex":"Üç kişi."},
+{"q":"簡単 → ?","a":"kolay","c":["zor","yavaş","çabuk"],"ex":"Türkçe kolay mı?"},
+{"q":"座席 → ?","a":"koltuk","c":["masa","sandalye","yatak"],"ex":"Koltuk rahat."},
+{"q":"話す → ?","a":"konuşmak","c":["demek","anlatmak","duymak"],"ex":"Türkçe konuşuyorum."},
+{"q":"村 → ?","a":"köy","c":["şehir","kasaba","bölge"],"ex":"Köy küçük."},
+{"q":"クレジット → ?","a":"kredi","c":["kart","nakit","borç"],"ex":"Kredi kartı."},
+{"q":"使う → ?","a":"kullanmak","c":["çalışmak","dönmek","yapmak"],"ex":"Bilgisayar kullanıyorum."},
+{"q":"小さい → ?","a":"küçük","c":["büyük","geniş","kısa"],"ex":"Küçük oda."},
+{"q":"灰皿 → ?","a":"kül tablası","c":["tabak","tepsi","masa"],"ex":"Kül tablası nerede?"},
+
+{"q":"必要な → ?","a":"lazım","c":["gerek","uygun","zorunlu"],"ex":"Harita lazım."},
+{"q":"リラ → ?","a":"lira","c":["dolar","euro","yen"],"ex":"On lira."},
+{"q":"ロビー → ?","a":"lobi","c":["oda","restoran","bahçe"],"ex":"Lobi girişte."},
+{"q":"お願いします → ?","a":"lütfen","c":["Buyurun","Affedersiniz","Teşekkürler"],"ex":"Bir kahve, lütfen."},
+
+{"q":"残念ながら → ?","a":"maalesef","c":["üzgünüm","belki","ne yazık ki"],"ex":"Maalesef yok."},
+{"q":"テーブル → ?","a":"masa","c":["koltuk","yatak","banka"],"ex":"Masa dolu."},
+{"q":"満足している → ?","a":"memnun","c":["mutlu","iyi","güzel"],"ex":"Memnunum."},
+{"q":"職員 → ?","a":"memur","c":["öğretmen","garson","şoför"],"ex":"Ben memurum."},
+{"q":"メニュー → ?","a":"menü","c":["liste","kart","fiş"],"ex":"Menü alabilir miyim?"},
+{"q":"こんにちは → ?","a":"merhaba","c":["selam","günaydın","iyi akşamlar"],"ex":"Merhaba, ben Miki."},
+{"q":"地下鉄 → ?","a":"metro","c":["tren","otobüs","dolmuş"],"ex":"Metro nerede?"},
+{"q":"果物 → ?","a":"meyve","c":["sebze","yemek","şeker"],"ex":"Meyve taze."},
+{"q":"エジプト → ?","a":"Mısır","c":["Türkiye","Suriye","Irak"],"ex":"Mısır uzak."},
+{"q":"100万 → ?","a":"milyon","c":["bin","yüz","milyar"],"ex":"Bir milyon."},
+{"q":"可能 → ?","a":"mümkün","c":["imkânsız","zor","kesin"],"ex":"Mümkün mü?"},
+{"q":"もしできれば → ?","a":"mümkünse","c":["belki","inşallah","umarım"],"ex":"Mümkünse yarın."},
+{"q":"博物館 → ?","a":"müze","c":["sergi","kütüphane","okul"],"ex":"Müze kapalı."},
+
+{"q":"どう → ?","a":"nasıl","c":["ne","hangi","kim"],"ex":"Nasıl gidiyor?"},
+{"q":"何 → ?","a":"ne","c":["kim","hangi","nerede"],"ex":"Bu ne?"},
+{"q":"いくら → ?","a":"ne kadar","c":["kaç","nasıl","hangi"],"ex":"Ne kadar?"},
+{"q":"いつ → ?","a":"ne zaman","c":["şimdi","sonra","dün"],"ex":"Ne zaman geliyorsun?"},
+{"q":"なぜ → ?","a":"neden","c":["niçin","çünkü","nasıl"],"ex":"Neden geç kaldın?"},
+{"q":"どこ → ?","a":"nere / neresi","c":["burada","orada","şurada"],"ex":"Neresi?"},
+{"q":"ネヴシェヒル → ?","a":"Nevşehir","c":["Ankara","İzmir","Kapadokya"],"ex":"Nevşehir Türkiye’de."},
+{"q":"メモ → ?","a":"not","c":["fiş","bilet","kart"],"ex":"Not aldım."},
+
+{"q":"彼ら、あれら → ?","a":"onlar","c":["biz","siz","bunlar"],"ex":"Onlar Türk."},
+{"q":"彼の／彼女の → ?","a":"onun","c":["benim","sizin","bizim"],"ex":"Onun evi büyük."},
+{"q":"10、10の → ?","a":"on","c":["dokuz","yirmi","otuz"],"ex":"On lira."},
+{"q":"部屋 → ?","a":"oda","c":["ev","koridor","sınıf"],"ex":"Oda boş."},
+{"q":"部屋番号 → ?","a":"oda numarası","c":["kat numarası","oda fiyatı","bina numarası"],"ex":"Oda numarası ne?"},
+{"q":"そこ → ?","a":"ora","c":["bura","şura","orası"],"ex":"Ora büyük."},
+{"q":"真ん中、中 → ?","a":"orta","c":["yan","alt","üst"],"ex":"Orta kapı açık."},
+{"q":"中央アナトリア → ?","a":"Orta Anadolu","c":["Ege","Marmara","Karadeniz"],"ex":"Orta Anadolu Türkiye’dedir."},
+{"q":"中間の → ?","a":"ortanca","c":["büyük","küçük","ara"],"ex":"Ortanca çocuk."},
+{"q":"座る → ?","a":"oturmak","c":["kalkmak","uyumak","çıkmak"],"ex":"Burada oturuyorum."},
+{"q":"バス → ?","a":"otobüs","c":["dolmuş","tren","taksi"],"ex":"Otobüste biniyorum."},
+{"q":"ホテル → ?","a":"otel","c":["pansiyon","ev","lokanta"],"ex":"Otel nerede?"},
+
+{"q":"宿題 → ?","a":"ödev","c":["ders","kitap","çanta"],"ex":"Ödevimi bitirdim."},
+{"q":"正午 → ?","a":"öğle","c":["sabah","akşam","gece"],"ex":"Öğle yemeği."},
+{"q":"昼食 → ?","a":"öğle yemeği","c":["kahvaltı","akşam yemeği","çay"],"ex":"Öğle yemeği yedim."},
+{"q":"学生 → ?","a":"öğrenci","c":["öğretmen","memur","arkadaş"],"ex":"Ben öğrenci değilim."},
+{"q":"学ぶ → ?","a":"öğrenmek","c":["bilmek","öğretmek","duymak"],"ex":"Türkçe öğreniyorum."},
+{"q":"教える → ?","a":"öğretmek","c":["öğrenmek","anlatmak","demek"],"ex":"Türkçe öğretmek zor."},
+{"q":"先生 → ?","a":"öğretmen","c":["öğrenci","memur","garson"],"ex":"O öğretmen."},
+
+{"q":"ショール → ?","a":"pike","c":["yorgan","battaniye","şal"],"ex":"Pike ince."},
+{"q":"家賃 → ?","a":"kira","c":["fiyat","tutar","hesap"],"ex":"Kira ne kadar?"},
+{"q":"パン屋 → ?","a":"fırın","c":["market","kasap","manav"],"ex":"Fırın açık."},
+
+{"q":"レストラン → ?","a":"restoran","c":["lokanta","kafe","bar"],"ex":"Restoran açık mı?"},
+{"q":"色 → ?","a":"renk","c":["boya","şekil","çizgi"],"ex":"Bu renk güzel."},
+
+{"q":"売る → ?","a":"satmak","c":["almak","vermek","bulmak"],"ex":"Domates satıyorum."},
+{"q":"時計、時刻 → ?","a":"saat","c":["dakika","gün","ay"],"ex":"Saat kaç?"},
+{"q":"居間、サロン → ?","a":"salon","c":["oda","bahçe","sofa"],"ex":"Salon büyük."},
+{"q":"テーブルクロス → ?","a":"sofra bezi","c":["masa örtüsü","tabak","tepsi"],"ex":"Sofra bezi temiz."},
+{"q":"困難 → ?","a":"sıkıntı","c":["kolay","zorluk","kaza"],"ex":"Sıkıntı yok."},
+{"q":"学校 → ?","a":"okul","c":["ev","ders","kütüphane"],"ex":"Okula gidiyorum."},
+{"q":"単語 → ?","a":"sözcük","c":["cümle","harf","metin"],"ex":"Bu sözcüğü bilmiyorum."},
+{"q":"通り → ?","a":"sokak","c":["cadde","yol","köy"],"ex":"Bu sokak dar."},
+{"q":"左 → ?","a":"sol","c":["sağ","arka","ön"],"ex":"Sol tarafta."},
+{"q":"質問 → ?","a":"soru","c":["cevap","konu","ders"],"ex":"Bir soru sorabilir miyim?"},
+{"q":"聞く（ask） → ?","a":"sormak","c":["duymak","aramak","bakmak"],"ex":"Bunu sormak istiyorum."},
+
+{"q":"町、都市 → ?","a":"şehir","c":["köy","kasaba","mahalle"],"ex":"Bu şehir güzel."},
+{"q":"何か → ?","a":"şey","c":["bu","şu","o"],"ex":"Bir şey sormak istiyorum."},
+{"q":"暑い → ?","a":"sıcak","c":["soğuk","ılık","serin"],"ex":"Bugün çok sıcak."},
+{"q":"串焼き → ?","a":"şiş","c":["bıçak","çatal","kaşık"],"ex":"Şiş kebap."},
+{"q":"ミルク → ?","a":"süt","c":["su","yoğurt","ayran"],"ex":"Süt içiyorum."},
+
+{"q":"皿 → ?","a":"tabak","c":["çorba","yemek","salata"],"ex":"Tabak temiz."},
+{"q":"はい → ?","a":"tamam","c":["evet","peki","hayır"],"ex":"Tamam, geliyorum."},
+{"q":"観光 → ?","a":"turizm","c":["tatil","gezi","yolculuk"],"ex":"Turizm önemli."},
+{"q":"トルコ人 → ?","a":"Türk","c":["Türkiye","Türkçe","Japon"],"ex":"O Türk."},
+{"q":"トルコ語 → ?","a":"Türkçe","c":["Türk","Türkiye","Japonca"],"ex":"Türkçe konuşuyorum."},
+
+{"q":"適切な → ?","a":"uygun","c":["yanlış","kötü","zor"],"ex":"Bu uygun."},
+{"q":"眠る → ?","a":"uyumak","c":["yatmak","kalkmak","dinlenmek"],"ex":"Uyuyorum."},
+{"q":"すみません（遺憾） → ?","a":"üzgünüm","c":["maalesef","teşekkür ederim","lütfen"],"ex":"Üzgünüm, anlamadım."},
+
+{"q":"ある、いる → ?","a":"var","c":["yok","değil","git"],"ex":"Taksi var mı?"},
+{"q":"ください → ?","a":"verin","c":["alın","buyurun","gösterin"],"ex":"Bir kahve verin."},
+{"q":"与える → ?","a":"vermek","c":["almak","satmak","bulmak"],"ex":"Para vermek istemiyorum."},
+{"q":"長い → ?","a":"uzun","c":["kısa","dar","geniş"],"ex":"Uzun boylu."},
+
+{"q":"書く → ?","a":"yazmak","c":["okumak","çizmek","demek"],"ex":"Mektup yazıyorum."},
+{"q":"夏 → ?","a":"yaz","c":["kış","ilkbahar","sonbahar"],"ex":"Yaz sıcak."},
+{"q":"道 → ?","a":"yol","c":["cadde","sokak","yer"],"ex":"Yol uzun."},
+{"q":"歩く → ?","a":"yürümek","c":["koşmak","gitmek","çıkmak"],"ex":"Yürümek sağlıklıdır."},
+{"q":"100 → ?","a":"yüz","c":["bin","on","elli"],"ex":"Yüz lira."},
+
+{"q":"時間 → ?","a":"zaman","c":["saat","an","gün"],"ex":"Zaman yok."},
+{"q":"弱い → ?","a":"zayıf","c":["güçlü","kalın","şişman"],"ex":"Zayıf biri."},
+{"q":"難しい → ?","a":"zor","c":["kolay","yavaş","dar"],"ex":"Türkçe zor."},
+{"q":"ドア → ?","a":"kapı","c":["pencere","duvar","oda"],"ex":"Kapı açık."}
+
+  ];
+
+  let current;
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const r = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[r]] = [arr[r], arr[i]];
+    }
+  }
+
+  function nextQuestion() {
+    current = qa[Math.floor(Math.random() * qa.length)];
+
+    document.getElementById("question").textContent = current.q;
+    document.getElementById("explain").style.opacity = 0;
+    document.getElementById("explain").textContent = "";
+
+    const answers = [...current.c, current.a];
+    shuffle(answers);
+
+    const choicesDiv = document.getElementById("choices");
+    choicesDiv.innerHTML = "";
+
+    answers.forEach(choice => {
+      const btn = document.createElement("button");
+      btn.textContent = choice;
+      btn.className = "choice";
+      btn.onclick = () => checkChoice(btn, choice);
+      choicesDiv.appendChild(btn);
+    });
+  }
+
+  function checkChoice(btn, choice) {
+    if (choice === current.a) {
+      btn.classList.add("correct");
+      document.getElementById("explain").textContent = "✔ " + current.ex;
+    } else {
+      btn.classList.add("wrong");
+      document.getElementById("explain").textContent =
+        "✘ 正解: " + current.a + "\n例文: " + current.ex;
+    }
+    document.getElementById("explain").style.opacity = 1;
+  }
+
+  document.getElementById("next").addEventListener("click", nextQuestion);
+
+  nextQuestion();  // 最初の1問
+});
+</script>
+
+</body>
+</html>
