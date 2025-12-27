@@ -153,6 +153,38 @@ header {
   from { background:#ffd2d2; }
   to { background:white; }
 }
+
+.feedback {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f4fff0;
+  border: 1px solid #c7e6bc;
+  text-align: left;
+  display: none;
+}
+.feedback .fb-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.feedback .fb-title.ok { color:#2e8b26; }
+.feedback .fb-title.ng { color:#c0392b; }
+.feedback .fb-answer { font-size: 20px; margin-bottom: 6px; }
+.feedback .fb-example { color:#333; margin-bottom:6px; }
+.feedback .fb-hint { color:#4f6b45; font-size: 16px; }
+.feedback .fb-repeat {
+  background: #2f7d1e;
+  margin-top: 8px;
+}
+
+.hintText {
+  color:#4b6d3a;
+  margin: 8px 0 0;
+  font-size: 16px;
+}
 </style>
 </head>
 
@@ -176,6 +208,13 @@ header {
   <div id="choiceMode" class="box">
     <div id="question"></div>
     <div id="choices"></div>
+    <div id="choiceFeedback" class="feedback">
+      <div class="fb-title"></div>
+      <div class="fb-answer"></div>
+      <div class="fb-example"></div>
+      <div class="fb-hint"></div>
+      <button class="mainBtn fb-repeat">もう一度解く</button>
+    </div>
     <button class="mainBtn" id="nextBtn">次へ</button>
   </div>
 
@@ -189,6 +228,13 @@ header {
       <button>Ç</button><button>Ğ</button><button>Ö</button>
       <button>Ş</button><button>Ü</button>
       <button>.</button><button>?</button>
+    </div>
+    <div id="inputFeedback" class="feedback">
+      <div class="fb-title"></div>
+      <div class="fb-answer"></div>
+      <div class="fb-example"></div>
+      <div class="fb-hint"></div>
+      <button class="mainBtn fb-repeat">もう一度解く</button>
     </div>
     <button class="mainBtn" id="inputCheck">答える</button>
     <button class="mainBtn" id="inputNext">次へ</button>
@@ -213,6 +259,13 @@ header {
     <div id="mistakeInfo"></div>
     <div id="mistakeQuestion"></div>
     <div id="mistakeChoices"></div>
+    <div id="mistakeFeedback" class="feedback">
+      <div class="fb-title"></div>
+      <div class="fb-answer"></div>
+      <div class="fb-example"></div>
+      <div class="fb-hint"></div>
+      <button class="mainBtn fb-repeat">もう一度解く</button>
+    </div>
     <button class="mainBtn" id="mistakeNext">次へ</button>
   </div>
 
@@ -242,6 +295,7 @@ let current = null;
 let mode = "choice"; 
 let filteredList = [...vocab];
 let mistakeList = JSON.parse(localStorage.getItem("mistakeList") || "[]");
+let reviewStack = [];
 
 // Stats
 let total = Number(localStorage.getItem("total") || 0);
@@ -284,13 +338,71 @@ function pickRandom(list){
   return list[Math.floor(Math.random()*list.length)];
 }
 
+function getNextWord(){
+  if(reviewStack.length>0) return reviewStack.shift();
+  return pickRandom(filteredList);
+}
+
+function queueReview(wordObj){
+  if(!reviewStack.includes(wordObj)){
+    reviewStack.unshift(wordObj);
+  }
+}
+
+function buildHint(wordObj){
+  const posMap = {
+    noun:"名詞",
+    verb:"動詞",
+    adj:"形容詞",
+    adv:"副詞",
+    num:"数字",
+    pron:"代名詞",
+    expression:"フレーズ",
+    other:"その他"
+  };
+  const pos = posMap[wordObj.pos] || "語";
+  return `品詞:${pos} / 最初の文字:${wordObj.a.slice(0,1)}`;
+}
+
+function showFeedback(area, isCorrect, wordObj){
+  const box = document.getElementById(area+"Feedback");
+  const title = box.querySelector(".fb-title");
+  const answer = box.querySelector(".fb-answer");
+  const example = box.querySelector(".fb-example");
+  const hint = box.querySelector(".fb-hint");
+  const repeatBtn = box.querySelector(".fb-repeat");
+
+  box.style.display = "block";
+  title.textContent = isCorrect ? "正解！よくできました" : "覚えよう";
+  title.className = "fb-title " + (isCorrect ? "ok" : "ng");
+  answer.textContent = `答え: ${wordObj.a}`;
+  example.textContent = `例文: ${wordObj.ex}`;
+  hint.textContent = isCorrect ? "次も同じ調子で！" : `ヒント: ${buildHint(wordObj)}`;
+
+  if(isCorrect){
+    repeatBtn.style.display = "none";
+  } else {
+    repeatBtn.style.display = "inline-block";
+    repeatBtn.onclick = ()=>{
+      queueReview(wordObj);
+      hint.textContent = "次に同じ単語を出します。";
+    };
+  }
+}
+
+function hideFeedback(area){
+  const box = document.getElementById(area+"Feedback");
+  if(box) box.style.display = "none";
+}
+
 // ========== 4択 ==========
 function newQuestion(){
-  current = pickRandom(filteredList);
+  current = getNextWord();
   question.innerText = current.q;
 
   let arr = [current.a, ...current.c].sort(()=>Math.random()-0.5);
   choices.innerHTML = "";
+  hideFeedback("choice");
 
   arr.forEach(ans=>{
     let btn = document.createElement("button");
@@ -307,27 +419,25 @@ function checkChoice(ans){
   if(ans === current.a){
     correct++;
     flash("choiceMode","correctFlash");
-
-    // ⭐ 正解したら自動で次へ進む（0.5秒）
-    setTimeout(() => {
-      newQuestion();
-    }, 500);
-
   } else {
     wrong++;
     flash("choiceMode","wrongFlash");
     addMistake(current.a);
+    queueReview(current);
   }
 
+  showFeedback("choice", ans === current.a, current);
   saveStats();
 }
+nextBtn.onclick = newQuestion;
 
 // ========== 入力モード ==========
 function newInputQuestion(){
-  current = pickRandom(filteredList);
+  current = getNextWord();
   document.getElementById("question_input").innerText = current.q;
   inputAnswer.value = "";
   inputAnswer.focus();
+  hideFeedback("input");
 }
 
 inputCheck.onclick = ()=>{
@@ -337,16 +447,13 @@ inputCheck.onclick = ()=>{
   if(user === real){
     correct++;
     flash("inputMode","correctFlash");
-
-    setTimeout(() => {
-      newInputQuestion();
-    }, 500);
-
   } else {
     wrong++;
     flash("inputMode","wrongFlash");
     addMistake(current.a);
+    queueReview(current);
   }
+  showFeedback("input", user === real, current);
   saveStats();
 };
 inputNext.onclick = newInputQuestion;
@@ -374,6 +481,7 @@ function newMistakeQuestion(){
     mistakeInfo.innerHTML = "<p>苦手語彙はありません！</p>";
     mistakeQuestion.innerHTML = "";
     mistakeChoices.innerHTML = "";
+    hideFeedback("mistake");
     return;
   }
 
@@ -382,6 +490,7 @@ function newMistakeQuestion(){
 
   mistakeInfo.innerHTML = `<p>苦手語彙：${mistakeList.length}語</p>`;
   mistakeQuestion.innerText = current.q;
+  hideFeedback("mistake");
 
   let arr = [current.a, ...current.c].sort(()=>Math.random()-0.5);
   mistakeChoices.innerHTML = "";
@@ -404,7 +513,9 @@ function checkMistake(ans, word){
   } else {
     wrong++;
     flash("mistakeMode","wrongFlash");
+    queueReview(current);
   }
+  showFeedback("mistake", ans === word, current);
   saveStats();
 }
 
